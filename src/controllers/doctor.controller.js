@@ -33,7 +33,7 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
     const secretaryIds = req.body.SecretaryIds || [];
     try {
-        const affectedRows = await service.addOrEditDoctor(req.body, req.params.id, secretaryIds);
+        await service.addOrEditDoctor(req.body, req.params.id, secretaryIds);
         res.status(201).json({message: "Doctor added"});
     } catch (error) {
         res.status(400).json({error: error.message});
@@ -52,10 +52,16 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     const affectedRows = await service.deleteDoctor(req.params.id)
 
-    if (affectedRows === 0) {
+    if (affectedRows[0] === 0) {
         res.status(404).json("no record found for id " + req.params.id);
         return;
     }
+
+    if (affectedRows[1] !== 0) {
+        res.send(`Doctor deleted successfully, along with ${affectedRows[1]} relations`);
+        return;
+    }
+
     res.send(`Doctor deleted successfully`);
 });
 

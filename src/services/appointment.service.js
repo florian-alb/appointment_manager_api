@@ -12,7 +12,7 @@ module.exports.getAppointmentById = async (id) => {
 }
 
 module.exports.deleteAppointment = async (id) => {
-    const [record] = await db.query("DELETE FROM Appointments WHERE SecretaryID = ?", [id]);
+    const [record] = await db.query("DELETE FROM Appointments WHERE AppointmentID = ?", [id]);
     return record.affectedRows;
 }
 

@@ -6,7 +6,7 @@ const service = require("../services/doctorSecretary.service.js");
 
 // Add a doctor-secretary relationship
 router.post("/", async (req, res) => {
-    const status = await service.addOrUpdateDoctorSecretaryRelation(req.body.DoctorId, req.body.SecretaryId);
+    const status = await service.addDoctorSecretaryRelation(req.body);
 
     if (status.status !== "Success"){
         res.status(400).json(status.status);
@@ -33,9 +33,15 @@ router.get("/secretary/:SecretaryId/doctors", async (req, res) => {
     res.json(records);
 });
 
+// Update a doctor-secretary relationship
+router.put("/", async (req, res) => {
+    const status = await service.updateDoctorSecretaryRelation(req.body);
+    res.json(status);
+});
+
 // Delete a doctor-secretary relationship
-router.delete("/", async (req, res) => {
-    const affectedRows = await service.deleteDoctorSecretaryRelation(req.body.DoctorId, req.body.SecretaryId);
+router.delete("/secretary/:SecretaryId/doctor/:DoctorId", async (req, res) => {
+    const affectedRows = await service.deleteDoctorSecretaryRelation(req.params.DoctorId, req.params.SecretaryId);
     if (affectedRows === 0) {
         res.status(404).json("No record found for this relation");
         return;

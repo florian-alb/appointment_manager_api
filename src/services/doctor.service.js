@@ -15,22 +15,23 @@ module.exports.getDoctorById = async (id) => {
 }
 
 module.exports.deleteDoctor = async (id) => {
+    const [deletedRelation] = await db.query("DELETE FROM DoctorSecretary WHERE DoctorID = ?", [id]);
     const [record] = await db.query("DELETE FROM Doctors WHERE DoctorID = ?", [id]);
-    return record.affectedRows;
+    return [record.affectedRows, deletedRelation.affectedRows];
 }
 
-module.exports.addOrEditDoctor = async (obj, id = 0, secretaryIds = []) => {
+module.exports.addOrEditDoctor = async (obj, doctorId = 0, secretaryIds = []) => {
     let errorMessages = [];
-    let doctorId = id;
-
     const connection = await db.getConnection();
 
     try {
         // First Transaction: Create or update the doctor
         await connection.beginTransaction();
         const [[[record]]] = await connection.query("CALL usp_doctor_add_or_edit(?, ?, ?, ?, ?, ?)",
-            [id, obj.FirstName, obj.LastName, obj.Speciality, obj.PhoneNumber, obj.Email]);
+            [doctorId, obj.FirstName, obj.LastName, obj.Speciality, obj.PhoneNumber, obj.Email]);
         await connection.commit();
+
+        console.log(doctorId)
 
         if (!doctorId) {
             doctorId = record.InsertId;
@@ -39,9 +40,8 @@ module.exports.addOrEditDoctor = async (obj, id = 0, secretaryIds = []) => {
         // Second Transaction: Add or update the doctor-secretary relations
         await connection.beginTransaction();
         for (const secretaryId of secretaryIds) {
-            const status = await relationService.addOrUpdateDoctorSecretaryRelation(doctorId, secretaryId, connection);
+            const status = await relationService.addDoctorSecretaryRelation(doctorId, secretaryId, connection);
             if (status.status !== 'Success') {
-                console.log(status.status)
                 errorMessages.push(`Error with secretary ID ${secretaryId}: ${status.status}`);
             }
         }

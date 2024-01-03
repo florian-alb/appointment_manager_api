@@ -58,9 +58,13 @@ CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_secretary_add_or_edit`(
     IN _email VARCHAR(255)
 )
 BEGIN
+    DECLARE insertId INT;
+    DECLARE affectedRows INT;
+
     IF _secretary_id = 0 THEN
         INSERT INTO Secretaries (FirstName, LastName, PhoneNumber, Email)
         VALUES (_first_name, _last_name, _phone_number, _email);
+        SET insertId = LAST_INSERT_ID();
     ELSE
         UPDATE Secretaries
         SET FirstName   = _first_name,
@@ -68,13 +72,15 @@ BEGIN
             PhoneNumber = _phone_number,
             Email       = _email
         WHERE SecretaryID = _secretary_id;
+        SET insertId = _secretary_id;
     END IF;
 
-    SELECT ROW_COUNT() AS AffectedRows;
+    SET affectedRows = ROW_COUNT();
+
+    SELECT affectedRows AS AffectedRows , insertId AS InsertId;
 END;
 
-create
-    definer = root@localhost procedure usp_doctor_add_or_edit(IN _doctor_id int, IN _first_name varchar(255),
+CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_doctor_add_or_edit`(IN _doctor_id int, IN _first_name varchar(255),
                                                               IN _last_name varchar(255), IN _speciality varchar(255),
                                                               IN _phone_number varchar(20), IN _email varchar(255))
 BEGIN
@@ -128,7 +134,7 @@ BEGIN
     SELECT ROW_COUNT() AS AffectedRows;
 END;
 
-CREATE PROCEDURE IF NOT EXISTS usp_appointment_add_or_edit(
+CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_appointment_add_or_edit`(
     IN _appointment_id int,
     IN _date datetime,
     IN _patient_id int, IN _doctor_id int,
@@ -167,33 +173,58 @@ BEGIN
     END IF;
 END;
 
-CREATE PROCEDURE IF NOT EXISTS usp_add_or_update_doctor_secretary_relation(
-    IN _doctor_id INT,
-    IN _secretary_id INT,
-    OUT _status varchar(255))
+CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_add_doctor_secretary_relation`(IN _doctor_id int, IN _secretary_id int, OUT _status varchar(255))
 BEGIN
-    DECLARE doctorExists INT;
-    DECLARE secretaryExists INT;
-    DECLARE existingRelation INT;
+    DECLARE doctorExists, secretaryExists, existingRelation BOOL DEFAULT FALSE;
 
-    SELECT COUNT(*) INTO doctorExists FROM Doctors WHERE DoctorID = _doctor_id;
-    SELECT COUNT(*) INTO secretaryExists FROM Secretaries WHERE SecretaryID = _secretary_id;
+    SELECT EXISTS(SELECT 1 FROM Doctors WHERE DoctorID = _doctor_id) INTO doctorExists;
+    SELECT EXISTS(SELECT 1 FROM Secretaries WHERE SecretaryID = _secretary_id) INTO secretaryExists;
 
-    IF doctorExists = 0 THEN
+    IF NOT doctorExists THEN
         SET _status = 'Doctor does not exist';
-    ELSEIF secretaryExists = 0 THEN
+    END IF;
+    IF NOT secretaryExists THEN
         SET _status = 'Secretary does not exist';
-    ELSE
-        SELECT COUNT(*)
-        INTO existingRelation
-        FROM DoctorSecretary
-        WHERE DoctorID = _doctor_id AND SecretaryID = _secretary_id;
+    END IF;
 
-        IF existingRelation = 0 THEN
-            INSERT INTO DoctorSecretary (DoctorID, SecretaryID) VALUES (_doctor_id, _secretary_id);
-            SET _status = 'Success';
+    SELECT EXISTS(SELECT 1 FROM DoctorSecretary WHERE DoctorID = _doctor_id AND SecretaryID = _secretary_id)
+    INTO existingRelation;
+
+    IF !existingRelation THEN
+        INSERT INTO DoctorSecretary (DoctorID, SecretaryID) VALUES (_doctor_id, _secretary_id);
+        SET _status = 'Success';
+    ELSE
+        SET _status = 'Relation Already Exists';
+    END IF;
+END;
+
+CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_update_doctor_secretary_relation`(
+    IN _current_doctor_id INT,
+    IN _current_secretary_id INT,
+    IN _new_doctor_id INT,
+    IN _new_secretary_id INT,
+    OUT _status VARCHAR(255)
+)
+BEGIN
+    DECLARE doctorExists, secretaryExists, relationExists BOOL;
+
+    SELECT EXISTS(SELECT 1 FROM Doctors WHERE DoctorID = _new_doctor_id) INTO doctorExists;
+    SELECT EXISTS(SELECT 1 FROM Secretaries WHERE SecretaryID = _new_secretary_id) INTO secretaryExists;
+
+    IF NOT doctorExists THEN
+        SET _status = 'New Doctor ID does not exist';
+    ELSEIF NOT secretaryExists THEN
+        SET _status = 'New Secretary ID does not exist';
+    ELSE
+        SELECT EXISTS(SELECT 1 FROM DoctorSecretary WHERE DoctorID = _current_doctor_id AND SecretaryID = _current_secretary_id) INTO relationExists;
+
+        IF NOT relationExists THEN
+            SET _status = 'Current relation does not exist';
         ELSE
-            SET _status = 'Relation Already Exists';
+            UPDATE DoctorSecretary
+            SET DoctorID = _new_doctor_id, SecretaryID = _new_secretary_id
+            WHERE DoctorID = _current_doctor_id AND SecretaryID = _current_secretary_id;
+            SET _status = 'Relation updated successfully';
         END IF;
     END IF;
 END;
