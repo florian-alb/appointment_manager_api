@@ -10,6 +10,12 @@ router.post("/", async (req, res) => {
     res.status(201).json("Relation added successfully");
 });
 
+// Get all secretaries_doctors records
+router.get("/", async (req, res) => {
+    const records = await service.getAllSecretaryDoctors(req.params.DoctorId);
+    res.json(records);
+});
+
 // Get secretaries for a doctor
 router.get("/doctor/:DoctorId/secretaries", async (req, res) => {
     const records = await service.getSecretariesForDoctor(req.params.DoctorId);

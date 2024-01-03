@@ -7,6 +7,16 @@ module.exports.addOrUpdateDoctorSecretaryRelation = async (doctorId, secretaryId
     return status;
 }
 
+module.exports.getAllSecretaryDoctors = async () => {
+    const [records] = await db.query(
+        "SELECT s.SecretaryID, s.FirstName as SecretaryFirstName, s.LastName as SecretaryLastName, s.PhoneNumber as SecretaryPhoneNumber, s.Email as SecretaryEmail," +
+        " d.DoctorID, d.FirstName as DoctorFirstName, d.LastName as DoctorLastName, d.Speciality, d.PhoneNumber as DoctorPhoneNumber, d.Email as DoctorEmail" +
+        " FROM DoctorSecretary ds" +
+        " JOIN Secretaries s ON ds.SecretaryID = s.SecretaryID" +
+        " JOIN Doctors d ON ds.DoctorID = d.DoctorID");
+    return records;
+}
+
 module.exports.getSecretariesForDoctor = async (id) => {
     const [records] = await db.query("SELECT s.* FROM Secretaries s JOIN DoctorSecretary ds ON s.SecretaryID = ds.SecretaryID WHERE ds.DoctorID = ?", [id]);
     return records;
