@@ -6,7 +6,12 @@ const service = require("../services/doctorSecretary.service.js");
 
 // Add a doctor-secretary relationship
 router.post("/", async (req, res) => {
-    await service.addDoctorSecretaryRelation(req.body.DoctorId, req.body.SecretaryId);
+    const status = await service.addOrUpdateDoctorSecretaryRelation(req.body.DoctorId, req.body.SecretaryId);
+
+    if (status.status !== "Success"){
+        res.status(400).json(status.status);
+        return;
+    }
     res.status(201).json("Relation added successfully");
 });
 
