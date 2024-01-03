@@ -1,9 +1,9 @@
 const db = require('../config/db/db.config.js');
 
 
-module.exports.addDoctorSecretaryRelation = async (obj, connection = db) => {
+module.exports.addDoctorSecretaryRelation = async (doctorId,secretaryId, connection = db) => {
     await connection.query("CALL usp_add_doctor_secretary_relation(?, ?, @status)",
-        [obj.DoctorId, obj.SecretaryId]);
+        [doctorId, secretaryId]);
     const [[status]] = await connection.query("SELECT @status AS status");
     return status;
 }
