@@ -7,7 +7,9 @@ const db = require('./src/config/db/db.config.js'),
     secretaryRoutes = require('./src/controllers/secretary.controller.js'),
     doctorRoutes = require('./src/controllers/doctor.controller.js'),
     patientRoutes = require('./src/controllers/patient.controller.js'),
-    appointmentRoutes = require('./src/controllers/appointment.controller.js');
+    appointmentRoutes = require('./src/controllers/appointment.controller.js'),
+    doctorSecretaryRoutes = require("./src/controllers/doctorSecretary.controller.js");
+
 
 const port = 3000;
 
@@ -18,6 +20,7 @@ app.use('/api/secretaries', secretaryRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use("/api/doctorSecretary", doctorSecretaryRoutes);
 
 app.use((err, req, res, next) => {
     console.error(err);

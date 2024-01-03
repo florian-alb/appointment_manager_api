@@ -17,6 +17,15 @@ CREATE TABLE IF NOT EXISTS Doctors
     Email       VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS DoctorSecretary
+(
+    DoctorID    INT NOT NULL,
+    SecretaryID INT NOT NULL,
+    PRIMARY KEY (DoctorID, SecretaryID),
+    FOREIGN KEY (DoctorID) REFERENCES Doctors (DoctorID),
+    FOREIGN KEY (SecretaryID) REFERENCES Secretaries (SecretaryID)
+);
+
 CREATE TABLE IF NOT EXISTS Patients
 (
     PatientID   INT PRIMARY KEY AUTO_INCREMENT,
@@ -64,29 +73,32 @@ BEGIN
     SELECT ROW_COUNT() AS AffectedRows;
 END;
 
-CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_doctor_add_or_edit`(
-    IN _doctor_id INT,
-    IN _first_name VARCHAR(255),
-    IN _last_name VARCHAR(255),
-    IN _speciality VARCHAR(255),
-    IN _phone_number VARCHAR(20),
-    IN _email VARCHAR(255)
-)
+create
+    definer = root@localhost procedure usp_doctor_add_or_edit(IN _doctor_id int, IN _first_name varchar(255),
+                                                              IN _last_name varchar(255), IN _speciality varchar(255),
+                                                              IN _phone_number varchar(20), IN _email varchar(255))
 BEGIN
+    DECLARE insertId INT;
+    DECLARE affectedRows INT;
+
     IF _doctor_id = 0 THEN
         INSERT INTO Doctors (FirstName, LastName, Speciality, PhoneNumber, Email)
         VALUES (_first_name, _last_name, _speciality, _phone_number, _email);
+        SET insertId = LAST_INSERT_ID();
     ELSE
         UPDATE Doctors
         SET FirstName   = _first_name,
             LastName    = _last_name,
-            Speciality  = _speciality,
+            Speciality    = _speciality,
             PhoneNumber = _phone_number,
             Email       = _email
         WHERE _doctor_id = DoctorID;
+        SET insertId = _doctor_id;
     END IF;
 
-    SELECT ROW_COUNT() AS AffectedRows;
+    SET AffectedRows = ROW_COUNT();
+
+    SELECT insertId AS InsertId, affectedRows AS AffectedRows;
 END;
 
 CREATE PROCEDURE IF NOT EXISTS `SocioDocs`.`usp_patient_add_or_edit`(
@@ -152,5 +164,36 @@ BEGIN
             WHERE AppointmentID = _appointment_id;
         END IF;
         SET _status = 'Success';
+    END IF;
+END;
+
+CREATE PROCEDURE IF NOT EXISTS usp_add_or_update_doctor_secretary_relation(
+    IN _doctor_id INT,
+    IN _secretary_id INT,
+    OUT _status varchar(255))
+BEGIN
+    DECLARE doctorExists INT;
+    DECLARE secretaryExists INT;
+    DECLARE existingRelation INT;
+
+    SELECT COUNT(*) INTO doctorExists FROM Doctors WHERE DoctorID = _doctor_id;
+    SELECT COUNT(*) INTO secretaryExists FROM Secretaries WHERE SecretaryID = _secretary_id;
+
+    IF doctorExists = 0 THEN
+        SET _status = 'Doctor does not exist';
+    ELSEIF secretaryExists = 0 THEN
+        SET _status = 'Secretary does not exist';
+    ELSE
+        SELECT COUNT(*)
+        INTO existingRelation
+        FROM DoctorSecretary
+        WHERE DoctorID = _doctor_id AND SecretaryID = _secretary_id;
+
+        IF existingRelation = 0 THEN
+            INSERT INTO DoctorSecretary (DoctorID, SecretaryID) VALUES (_doctor_id, _secretary_id);
+            SET _status = 'Relation Created';
+        ELSE
+            SET _status = 'Relation Already Exists';
+        END IF;
     END IF;
 END;

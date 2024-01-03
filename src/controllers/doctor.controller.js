@@ -31,12 +31,18 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-    await service.addOrEditDoctor(req.body)
-    res.status(201).json("Doctor added successfully");
+    const secretaryIds = req.body.SecretaryIds || [];
+    try {
+        const affectedRows = await service.addOrEditDoctor(req.body, req.params.id, secretaryIds);
+        res.status(201).json({message: "Doctor added"});
+    } catch (error) {
+        res.status(400).json({error: error.message});
+    }
 });
 
 router.put("/:id", async (req, res) => {
-    const affectedRows = await service.addOrEditDoctor(req.body, req.params.id)
+    const secretaryIds = req.body.SecretaryIds || [];
+    const affectedRows = await service.addOrEditDoctor(req.body, req.params.id, secretaryIds)
     if (affectedRows === 0) {
         res.status(404).json("no record found for id " + req.params.id);
     }
