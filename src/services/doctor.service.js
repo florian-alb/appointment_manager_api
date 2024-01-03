@@ -40,7 +40,8 @@ module.exports.addOrEditDoctor = async (obj, id = 0, secretaryIds = []) => {
         await connection.beginTransaction();
         for (const secretaryId of secretaryIds) {
             const status = await relationService.addOrUpdateDoctorSecretaryRelation(doctorId, secretaryId, connection);
-            if (status !== 'Success') {
+            if (status.status !== 'Success') {
+                console.log(status.status)
                 errorMessages.push(`Error with secretary ID ${secretaryId}: ${status.status}`);
             }
         }

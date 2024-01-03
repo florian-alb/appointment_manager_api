@@ -191,7 +191,7 @@ BEGIN
 
         IF existingRelation = 0 THEN
             INSERT INTO DoctorSecretary (DoctorID, SecretaryID) VALUES (_doctor_id, _secretary_id);
-            SET _status = 'Relation Created';
+            SET _status = 'Success';
         ELSE
             SET _status = 'Relation Already Exists';
         END IF;

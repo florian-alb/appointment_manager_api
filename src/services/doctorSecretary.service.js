@@ -1,6 +1,6 @@
 const db = require('../config/db/db.config.js');
 
-//TODO: refactor this
+
 module.exports.addOrUpdateDoctorSecretaryRelation = async (doctorId, secretaryId, connection=db) => {
     await connection.query("CALL usp_add_or_update_doctor_secretary_relation(?, ?, @status)",
         [doctorId, secretaryId]);
